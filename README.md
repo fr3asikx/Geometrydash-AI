@@ -24,6 +24,7 @@ pip install -r requirements.txt
 - Für zuverlässige Eingaben in DirectX-Spielen wird `pydirectinput` empfohlen. Alternativ fällt das System auf `pyautogui` zurück.
 - Passe bei Bedarf die Farbschwellenwerte in `geometrydash_ai/game_interface.py` (`EstimatorConfig`) an, damit Spieler und Hindernisse korrekt erkannt werden.
 
+
 ## Training starten
 
 Starte das Training mit:
