@@ -24,6 +24,7 @@ pip install -r requirements.txt
 - Für zuverlässige Eingaben in DirectX-Spielen wird `pydirectinput` empfohlen. Alternativ fällt das System auf `pyautogui` zurück.
 - Passe bei Bedarf die Farbschwellenwerte in `geometrydash_ai/game_interface.py` (`EstimatorConfig`) an, damit Spieler und Hindernisse korrekt erkannt werden.
 
+
 ## Training starten
 
 Starte das Training mit:
@@ -60,8 +61,8 @@ from geometrydash_ai import (
     DQNAgent,
 )
 
-# Standardmäßig wird automatisch das Fenster der `GeometryDash.exe` erfasst.
-capture = ScreenCapture(CaptureConfig(downscale=2))
+# Bildschirmbereich wählen (x1, y1, x2, y2) – an das eigene Setup anpassen.
+capture = ScreenCapture(CaptureConfig(region=(0, 0, 1280, 720), downscale=2))
 estimator = StateEstimator()
 controller = InputController()
 interface = GeometryDashScreenInterface(capture, estimator, controller)
@@ -72,6 +73,4 @@ trainer = Trainer(env, agent, level=demo_level("live"), config=TrainingConfig(ep
 trainer.train()
 ```
 
-Während das Level aktiv läuft, liest das Interface kontinuierlich das Fenster der `GeometryDash.exe` aus, schätzt den Zustand und sendet Sprünge/Klicks entsprechend der Aktionen des Agenten. Die Trainingsvisualisierung bleibt identisch, kann aber bei Bedarf deaktiviert werden (`--no-visualization`).
-
-> **Hinweis:** Falls mehrere Fenster der `GeometryDash.exe` geöffnet sind oder ein anderer Pfad verwendet wird, kann der Prozessname über `CaptureConfig(process_name="EigenerName.exe")` angepasst werden. Bei Bedarf lässt sich die automatische Fenstersuche auch durch Angabe einer expliziten Region überschreiben.
+Während das Level aktiv läuft, liest das Interface kontinuierlich den Bildschirm aus, schätzt den Zustand und sendet Sprünge/Klicks entsprechend der Aktionen des Agenten. Die Trainingsvisualisierung bleibt identisch, kann aber bei Bedarf deaktiviert werden (`--no-visualization`).

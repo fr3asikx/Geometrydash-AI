@@ -10,10 +10,8 @@ can start quickly and be refined later on.
 from __future__ import annotations
 
 import ctypes
-from ctypes import wintypes
 import time
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple
 
 import numpy as np
@@ -55,7 +53,6 @@ class CaptureConfig:
     region: Optional[Tuple[int, int, int, int]] = None
     downscale: int = 2
     frame_sleep: float = 1 / 60
-    process_name: Optional[str] = "GeometryDash.exe"
 
 
 class ScreenCapture:
@@ -63,8 +60,6 @@ class ScreenCapture:
 
     def __init__(self, config: CaptureConfig | None = None):
         config = config or CaptureConfig()
-        if config.region is None and config.process_name:
-            config = self._with_process_region(config)
         if dxcam is not None:
             self._capture = dxcam.create(output_color="BGR")
             self._grab: Callable[[], np.ndarray | None] = self._grab_dxcam
@@ -75,21 +70,6 @@ class ScreenCapture:
         else:  # pragma: no cover - requires OS specific deps
             raise RuntimeError("Install `dxcam` (Windows) or `mss` for screen capture.")
         self.config = config
-
-    def _with_process_region(self, config: CaptureConfig) -> CaptureConfig:
-        try:
-            region = locate_process_window(config.process_name)
-        except RuntimeError as exc:
-            raise RuntimeError(
-                f"Failed to locate window for process '{config.process_name}'."
-            ) from exc
-        return CaptureConfig(
-            monitor=config.monitor,
-            region=region,
-            downscale=config.downscale,
-            frame_sleep=config.frame_sleep,
-            process_name=config.process_name,
-        )
 
     def _grab_dxcam(self) -> np.ndarray | None:  # pragma: no cover - dxcam only
         return self._capture.get_latest_frame()
@@ -117,85 +97,6 @@ class ScreenCapture:
                 interpolation=cv2.INTER_AREA,
             )
         return frame
-
-
-def locate_process_window(process_name: str) -> Tuple[int, int, int, int]:
-    """Locate the bounding box of a visible window owned by ``process_name``.
-
-    Parameters
-    ----------
-    process_name:
-        Executable name to match (case insensitive). Must include the extension,
-        e.g. ``GeometryDash.exe``.
-
-    Returns
-    -------
-    Tuple[int, int, int, int]
-        The (left, top, right, bottom) rectangle of the first matching window.
-
-    Raises
-    ------
-    RuntimeError
-        If the process window cannot be located or the functionality is not
-        available on the current platform.
-    """
-
-    if not hasattr(ctypes, "windll"):
-        raise RuntimeError("Process-bound capture is only supported on Windows.")
-
-    user32 = ctypes.windll.user32  # type: ignore[attr-defined]
-    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
-    psapi = ctypes.windll.psapi  # type: ignore[attr-defined]
-
-    EnumWindows = user32.EnumWindows
-    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
-    GetWindowThreadProcessId = user32.GetWindowThreadProcessId
-    IsWindowVisible = user32.IsWindowVisible
-    GetWindowRect = user32.GetWindowRect
-    OpenProcess = kernel32.OpenProcess
-    CloseHandle = kernel32.CloseHandle
-    GetModuleFileNameExW = psapi.GetModuleFileNameExW
-
-    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-    PROCESS_VM_READ = 0x0010
-
-    target = process_name.lower()
-    result: Optional[Tuple[int, int, int, int]] = None
-
-    rect = wintypes.RECT()
-    buffer = ctypes.create_unicode_buffer(260)
-
-    def callback(hwnd: int, _lparam: int) -> bool:
-        nonlocal result
-        if not IsWindowVisible(hwnd):
-            return True
-        pid = wintypes.DWORD()
-        GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
-        process_handle = OpenProcess(
-            PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
-            False,
-            pid.value,
-        )
-        if not process_handle:
-            return True
-        try:
-            buffer_length = GetModuleFileNameExW(process_handle, None, buffer, len(buffer))
-            if buffer_length == 0:
-                return True
-            exe_name = Path(buffer.value).name.lower()
-            if exe_name != target:
-                return True
-            if GetWindowRect(hwnd, ctypes.byref(rect)) == 0:
-                return True
-            result = (rect.left, rect.top, rect.right, rect.bottom)
-            return False
-        finally:
-            CloseHandle(process_handle)
-
-    EnumWindows(EnumWindowsProc(callback), 0)
-    if result is None:
-        raise RuntimeError(f"Window for process '{process_name}' not found.")
-    return result
 
 
 @dataclass
