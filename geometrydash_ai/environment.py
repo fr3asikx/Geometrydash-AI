@@ -6,6 +6,8 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
+from .game_interface import GameState, GeometryDashScreenInterface
+
 
 @dataclass
 class Transformation:
@@ -179,3 +181,33 @@ def demo_level(name: str = "training_ground") -> Level:
         Obstacle(position=20.0, height=0.3, width=0.5),
     ]
     return Level(name=name, length=25.0, obstacles=obstacles)
+
+
+class RealGeometryDashEnv:
+    """Environment wrapper that interacts with the live game window."""
+
+    ACTIONS: Dict[int, str] = {0: "idle", 1: "jump", 2: "click"}
+
+    def __init__(self, interface: GeometryDashScreenInterface):
+        self.interface = interface
+        self._last_game_state: Optional[GameState] = None
+
+    def reset(self) -> np.ndarray:
+        observation, state = self.interface.reset()
+        self._last_game_state = state
+        return observation
+
+    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict[str, float]]:
+        observation, reward, done, info = self.interface.step(action)
+        self._last_game_state = self.interface.last_state
+        return observation, reward, done, info
+
+    def sample_level_state(self) -> Dict[str, object]:
+        state = self._last_game_state or GameState((0.0, 0.0), (0.0, 0.0), tuple(), 0.0)
+        return {
+            "player_position": state.player_pos[0],
+            "player_height": state.player_pos[1],
+            "level_length": 1.0,
+            "obstacles": list(state.obstacles),
+            "transformation": "live",
+        }
