@@ -1,0 +1,8 @@
+matplotlib
+numpy
+torch
+mss
+opencv-python
+pydirectinput
+pyautogui
+dxcam; platform_system == "Windows"
