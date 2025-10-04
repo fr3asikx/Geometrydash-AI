@@ -1,0 +1,13 @@
+matplotlib
+numpy
+gymnasium
+stable-baselines3[extra]
+torch
+mss
+opencv-python
+pydirectinput
+pyautogui
+pynput
+pywin32; sys_platform == "win32"
+pytest
+dxcam; platform_system == "Windows"
