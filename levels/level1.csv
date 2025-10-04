@@ -1,0 +1,5 @@
+type,x_start,x_end,y_top
+block,5,6,1.0
+spike,10,10.5,1.2
+block,15,16,1.0
+spike,20,20.5,1.3
