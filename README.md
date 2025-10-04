@@ -24,6 +24,7 @@ pip install -r requirements.txt
 - Für zuverlässige Eingaben in DirectX-Spielen wird `pydirectinput` empfohlen. Alternativ fällt das System auf `pyautogui` zurück.
 - Passe bei Bedarf die Farbschwellenwerte in `geometrydash_ai/game_interface.py` (`EstimatorConfig`) an, damit Spieler und Hindernisse korrekt erkannt werden.
 
+
 ## Training starten
 
 Starte das Training mit:
@@ -60,8 +61,8 @@ from geometrydash_ai import (
     DQNAgent,
 )
 
-# Standardmäßig wird automatisch das Fenster der `GeometryDash.exe` erfasst.
-capture = ScreenCapture(CaptureConfig(downscale=2))
+# Bildschirmbereich wählen (x1, y1, x2, y2) – an das eigene Setup anpassen.
+capture = ScreenCapture(CaptureConfig(region=(0, 0, 1280, 720), downscale=2))
 estimator = StateEstimator()
 controller = InputController()
 interface = GeometryDashScreenInterface(capture, estimator, controller)
@@ -72,56 +73,4 @@ trainer = Trainer(env, agent, level=demo_level("live"), config=TrainingConfig(ep
 trainer.train()
 ```
 
-Während das Level aktiv läuft, liest das Interface kontinuierlich das Fenster der `GeometryDash.exe` aus, schätzt den Zustand und sendet Sprünge/Klicks entsprechend der Aktionen des Agenten. Die Trainingsvisualisierung bleibt identisch, kann aber bei Bedarf deaktiviert werden (`--no-visualization`).
-
-> **Hinweis:** Falls mehrere Fenster der `GeometryDash.exe` geöffnet sind oder ein anderer Pfad verwendet wird, kann der Prozessname über `CaptureConfig(process_name="EigenerName.exe")` angepasst werden. Bei Bedarf lässt sich die automatische Fenstersuche auch durch Angabe einer expliziten Region überschreiben.
-
-## PPO (Sim-First + Transfer)
-
-Neben dem DQN-Training auf aufgezeichneten Frames enthält das Projekt nun einen deterministischen Simulator (`GDSimEnv`), der eine Tilemap aus CSV-Dateien lädt. Darauf aufbauend können PPO-Policies mit `stable-baselines3` trainiert und anschließend in das echte Spiel übertragen werden.
-
-### Setup
-
-```bash
-pip install -r requirements.txt
-```
-
-Der Simulator erwartet Level-Dateien im Ordner `levels/` (Beispiel: `level1.csv`). Ein Durchlauf entspricht einer 1D-Autoscroll-Strecke mit Achsparallelen Hindernissen.
-
-### Training im Simulator
-
-```bash
-python -m geometrydash_ai.ppo.train_ppo --level levels/level1.csv --timesteps 5000000
-```
-
-Wichtige Parameter:
-
-- `--dt`: Physik-Timestep (Standard `1/240 s`).
-- `--n-envs`: Anzahl parallelisierter Simulatorinstanzen (SubprocVecEnv).
-- `--tensorboard`: Optionaler Pfad für TensorBoard-Logs.
-
-Eine verkürzte Variante für Tests steht als Skript bereit:
-
-```bash
-./scripts/run_train_ppo.sh
-```
-
-Während des Trainings werden Mittelwerte der Episoden-Rückgaben sowie der beste Fortschritt (0–100 %) im Terminal angezeigt. Das finale Modell wird standardmäßig unter `models/ppo_gd_level1.zip` gespeichert.
-
-### Transfer ins echte Spiel
-
-```bash
-python -m geometrydash_ai.ppo.play_transfer --model models/ppo_gd_level1.zip --fps 240
-```
-
-Das Skript erzeugt einen Proxy-Zustand (identisch zum Simulator-Feature-Vektor) und sendet Space-Eingaben an die fokussierte `Geometry Dash`-Instanz. Für Experimente mit Computer-Vision kann `--vision` gesetzt werden, wodurch Screenshot-basierte Beobachtungen (`128×72`, Graustufen) erzeugt werden. Das Skript enthält einen einfachen Frame-Timer (Standard 240 FPS) sowie ein Debouncing, damit Tap-Aktionen nur einmal pro physikalischem Frame ausgelöst werden.
-
-Schnellaufruf:
-
-```bash
-./scripts/run_play_transfer.sh
-```
-
-> **Praxis-Tipp:** Für reproduzierbare Ergebnisse empfiehlt sich das Aktivieren des Practice-Mode oder ein FPS-Lock auf 240 Hz, damit der reale Client mit der Simulator-Taktung synchron läuft.
-
-> **Rechtlicher Hinweis:** Die Tools sind ausschließlich für Einzelspieler- und Offline-Experimente gedacht. Bitte keine kompetitiven Modi oder Online-Ranglisten beeinflussen.
+Während das Level aktiv läuft, liest das Interface kontinuierlich den Bildschirm aus, schätzt den Zustand und sendet Sprünge/Klicks entsprechend der Aktionen des Agenten. Die Trainingsvisualisierung bleibt identisch, kann aber bei Bedarf deaktiviert werden (`--no-visualization`).

@@ -7,7 +7,6 @@ from .environment import (
     RealGeometryDashEnv,
     demo_level,
 )
-from .envs import GDSimEnv
 from .game_interface import (
     CaptureConfig,
     GeometryDashScreenInterface,
@@ -25,7 +24,6 @@ __all__ = [
     "GeometryDashEnv",
     "RealGeometryDashEnv",
     "demo_level",
-    "GDSimEnv",
     "CaptureConfig",
     "GeometryDashScreenInterface",
     "InputController",
